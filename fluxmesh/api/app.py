@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +11,25 @@ from fluxmesh.api.routes import get_broker, router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     broker = await get_broker()
+    worker = None
+    scheduler = None
+
+    # Auto-start embedded worker & scheduler if enabled (default true for easy standalone usage)
+    if os.getenv("FLUXMESH_STANDALONE", "true").lower() in ("true", "1", "yes"):
+        from fluxmesh.scheduler.scheduler import FluxScheduler
+        from fluxmesh.worker.worker import FluxWorker
+
+        worker = FluxWorker(broker=broker, concurrency=int(os.getenv("FLUXMESH_EMBEDDED_CONCURRENCY", "4")))
+        scheduler = FluxScheduler(broker=broker, tick_interval=0.2)
+        await worker.start()
+        await scheduler.start()
+
     yield
+
+    if worker:
+        await worker.stop()
+    if scheduler:
+        await scheduler.stop()
     await broker.close()
 
 
