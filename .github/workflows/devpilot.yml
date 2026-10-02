@@ -1,0 +1,24 @@
+name: DevPilot Autonomous Bot
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  devpilot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run DevPilot AI Reviewer & Triage Bot
+        uses: VimalN2005/DevPilot@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          admin-user: "VimalN2005"
